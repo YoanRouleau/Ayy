@@ -16,6 +16,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.IBinder;
+import android.support.annotation.RequiresApi;
 
 
 import java.text.NumberFormat;
@@ -96,11 +97,14 @@ public class SensorListener extends Service implements SensorEventListener {
             startForeground(NOTIFICATION_ID, getNotification(this));
         } else if (getSharedPreferences("pedometer", Context.MODE_PRIVATE)
                 .getBoolean("notification", true)) {
-            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE))
-                    .notify(NOTIFICATION_ID, getNotification(this));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE))
+                        .notify(NOTIFICATION_ID, getNotification(this));
+            }
         }
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     public static Notification getNotification(final Context context) {
         if (BuildConfig.DEBUG) Logger.log("getNotification");
         SharedPreferences prefs = context.getSharedPreferences("pedometer", Context.MODE_PRIVATE);
@@ -127,11 +131,13 @@ public class SensorListener extends Service implements SensorEventListener {
             notificationBuilder.setContentText(
                     context.getString(R.string.your_progress_will_be_shown_here_soon));
         }
-        notificationBuilder.setPriority(Notification.PRIORITY_MIN).setShowWhen(false)
-                .setContentTitle(context.getString(R.string.notification_title)).setContentIntent(
-                PendingIntent.getActivity(context, 0, new Intent(context, Activity_Main.class),
-                        PendingIntent.FLAG_UPDATE_CURRENT)).setSmallIcon(R.drawable.ic_notification)
-                .setOngoing(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            notificationBuilder.setPriority(Notification.PRIORITY_MIN).setShowWhen(false)
+                    .setContentTitle(context.getString(R.string.notification_title)).setContentIntent(
+                    PendingIntent.getActivity(context, 0, new Intent(context, MainActivity.class),
+                            PendingIntent.FLAG_UPDATE_CURRENT)).setSmallIcon(R.drawable.ic_notification)
+                    .setOngoing(true);
+        }
         return notificationBuilder.build();
     }
 
@@ -220,7 +226,9 @@ public class SensorListener extends Service implements SensorEventListener {
         }
 
         // enable batching with delay of max 5 min
-        sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER),
-                SensorManager.SENSOR_DELAY_NORMAL, (int) (5 * MICROSECONDS_IN_ONE_MINUTE));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            sm.registerListener(this, sm.getDefaultSensor(Sensor.TYPE_STEP_COUNTER),
+                    SensorManager.SENSOR_DELAY_NORMAL, (int) (5 * MICROSECONDS_IN_ONE_MINUTE));
+        }
     }
 }
